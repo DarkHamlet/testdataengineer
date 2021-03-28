@@ -1,0 +1,41 @@
+######################
+##   Ubuntu Script  ##
+##   Hamlet Muñoz   ##
+##    2021-03-28    ##
+##  Test Capitaria  ##
+######################
+
+## Estoy usando WSL (Windows Subsystem for Linux)
+## Desde la terminal nos ubicamos en la carpeta (de Win) donde está el archivo.
+## Copiamos el archivo PADRON.csv al directorio de trabajo (de Ubu). 
+$ cp PADRON.csv ~/capitaria
+
+## Para saber qué columnas usar, enlistamos los headers usando sed:
+$ head -1 PADRON.csv | sed 's/;/\n/g' | nl  # aquí el delimitador es ; este reemplaza el delimitador por \n (un enter) así se puede ver enlistado.
+
+## Filtramos el archivo y contamos los registros de Rancagua...
+$ grep -c Rancagua PADRON.csv
+## ...pero necesitamos que cuente sólo en la columna $3.
+
+## Usamos awk, considerando el separador ;, para contar la cantidad de elementos únicos de Comuna ($3), ordenamos. Esto nos da una visión general de la cantidad de registros por Comuna.
+$ awk -F ';' '{print $3}' PADRON.csv | sort | uniq -c
+
+# 1) ¿Cuántos registros hay en Rancagua?
+## Le decimos a awk con -F que el separador es ; y luego filtramos la columna 3 por "Rancagua" y contamos las veces que aparece la palabra. Luego imprime el conteo. R: 194.487
+$ awk -F ';' ' BEGIN {count=0;}  { if ($3 == "Rancagua") count+=1} END {print count}' PADRON.csv
+
+# 2) ¿Cuántos registros hay en Chillán? (en reg está sin tilde)
+## Lo mismo para "Chillan", sin tilde. R: 152.723. Notar que un error común sería contar la palabra Chillan en todo el archivo.
+$ awk -F ';' ' BEGIN {count=0;}  { if ($3 == "Chillan") count+=1} END {print count}' PADRON.csv
+
+# 3) ¿Cuánta gente en Chile aparece en el registro con edad mayor a cien años?
+## Usamos lo mismo, simplemente cambiamos a la columna 14 que es Edad y le damos la condición mayor a 100. Y los contamos. R: 48.146 registros de personas con edad mayor a 100 años. R: 48.147
+$ awk -F ';' ' BEGIN {count=0;}  { if ($14 >100) count+=1} END {print count}' PADRON.csv
+
+# 4) ¿Cuál es la distribución de registros de personas mayores a cien años?
+## Haciendo lo mismo que arriba, le damos la condición (Edad>100) antes de imprimir la distribución, ordenarla, y luego contar los registros únicos de cada edad, esta vez mayor a 100. R: lista de registros por cada edad única mayor a 100. Notar que la edad máxima es 139.
+$ awk -F ';' '{if ($14>100) print $14}' PADRON.csv | sort | uniq -c
+
+# 5) ¿Dónde vive la persona más longeva del registro?
+## Sencillamente, si la Edad es 139, visto en 4), entonces que imprima la Comuna de ese registro. R: La persona más lóngeva vive en la comuna de Freire.
+$ awk -F ';' '{if ($14==139)) print $3}' PADRON.csv
